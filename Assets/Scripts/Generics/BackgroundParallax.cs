@@ -10,8 +10,6 @@ public class BackgroundParallax : MonoBehaviour
 
     void Awake()
     {
-
-
         cam = Boy;
     }
     
