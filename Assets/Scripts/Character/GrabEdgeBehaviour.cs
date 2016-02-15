@@ -4,6 +4,7 @@ using System;
 
 public class GrabEdgeBehaviour : MonoBehaviour {
 
+
     [System.Serializable]
     public class ClimbPaths
     {
