@@ -4,7 +4,7 @@ using UnityEngine;
 using System.Collections;
 
 public class BoyController : MonoBehaviour
-{
+{ 
     public enum State
     {  
         IDLE , EDGE_DETECTED ,NEAR_EDGE , GRABING_EDGE , GRABED_EDGE 
