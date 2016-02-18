@@ -8,7 +8,7 @@ public class GrounderFoot : MonoBehaviour
     void Start()
     {
     }
-
+    /*
     void LateUpdate()
     {
         hits = Physics2D.RaycastAll(transform.position, Vector2.down , 500,LayerMask.NameToLayer("Ground"));
@@ -19,5 +19,5 @@ public class GrounderFoot : MonoBehaviour
             print("dis : "  + hits[1].distance);
             //transform.up = Vector3.Lerp(transform.up , hits[1].normal - new Vector2(1,1) , Time.deltaTime * 5) ;
         }
-    }
+    }*/
 }

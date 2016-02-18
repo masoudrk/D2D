@@ -2,8 +2,9 @@
 
 using UnityEngine;
 using System.Collections;
+using System;
 
-public class BoyController : MonoBehaviour
+public partial class BoyController : MonoBehaviour
 { 
     public enum State
     {  
@@ -25,6 +26,7 @@ public class BoyController : MonoBehaviour
 
     private Rigidbody2D rigidBody2D;
     private Animator animator;
+
     void Start()
     {
         state = State.IDLE;
@@ -54,7 +56,7 @@ public class BoyController : MonoBehaviour
         animator.SetFloat("VelocityX", Mathf.Abs(moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
 
-        print(state);
+        stickHandOnEdge();
 
         if (state == State.GRABED_EDGE)
         {
@@ -64,39 +66,6 @@ public class BoyController : MonoBehaviour
         {
             detectEdges();
         }
-    }
-    
-    Collider2D[] edges;
-    Vector2 edgePos;
-
-    public void detectEdges()
-    {
-        edges = Physics2D.OverlapCircleAll(transform.position,
-            10 ,1 << LayerMask.NameToLayer("Corner"));
-
-        if (edges != null && edges.Length > 0)
-        {
-            edgePos = edges[0].transform.position;
-            float dis = Vector2.Distance(handTransform.position, edgePos);
-            print(dis);
-            if (dis < 1)
-                state = State.GRABED_EDGE;
-            else if (dis < 2) 
-                state = State.NEAR_EDGE;
-            else
-                state = State.EDGE_DETECTED;
-        }
-        else
-            state = State.IDLE;
-    }
-
-    public void comeToEdge()
-    {/*
-        Vector2 min = edgePos - new Vector2(handTransform.position.x , handTransform.position.y) ;
-        Vector3 lerp = Vector2.Lerp(Vector2.zero, min, Time.deltaTime * 40);
-        transform.position += lerp;*/
-        Vector2 min = handTransform.position - transform.position;
-        transform.position = edgePos +  min;
     }
 
     public void LateUpdate()
@@ -115,8 +84,9 @@ public class BoyController : MonoBehaviour
     public void OnDrawGizmos()
     {
         Gizmos.DrawWireSphere(transform.position, 10);
+        Gizmos.DrawWireSphere(handTransform.position, circleRadius);
     }
-
+    
     public void flipFace()
     {
         flipFacing = !flipFacing;
