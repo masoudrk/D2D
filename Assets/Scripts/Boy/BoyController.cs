@@ -11,6 +11,8 @@ public partial class BoyController : MonoBehaviour
         IDLE , EDGE_DETECTED ,NEAR_EDGE , GRABING_EDGE , GRABED_EDGE 
     }
 
+    public CharacterGroundChecker characterGroundChecker;
+
     State state;
 
     public Transform neckIK;
@@ -26,9 +28,13 @@ public partial class BoyController : MonoBehaviour
 
     private Rigidbody2D rigidBody2D;
     private Animator animator;
+    
+    private bool lockFliping,lockMovement, lockJump;
+
 
     void Start()
     {
+        lockJump = lockMovement = lockFliping = false;
         state = State.IDLE;
         rigidBody2D = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
@@ -37,27 +43,25 @@ public partial class BoyController : MonoBehaviour
 
     void Update()
     {
+        bool _isGround = characterGroundChecker.isGround;
         float moveX = Input.GetAxis("Horizontal");
         float moveY = Input.GetAxisRaw("Vertical");
 
-        rigidBody2D.velocity = new Vector2(moveX * maxSpeedX, rigidBody2D.velocity.y);
+        if (_isGround && !lockMovement) 
+            rigidBody2D.velocity = new Vector2(moveX * maxSpeedX, rigidBody2D.velocity.y);
 
-        if (moveY > 0)
+        if (moveY > 0 && _isGround && !lockJump)
         {
             if (rigidBody2D.velocity.y < 5)
                 rigidBody2D.velocity = new Vector2(rigidBody2D.velocity.x, 15);
         }
 
-        if ((moveX > 0 && flipFacing) || (moveX < 0 && !flipFacing))
-        {
+        if ((moveX > 0 && flipFacing) || (moveX < 0 && !flipFacing) && !lockFliping)
             flipFace();
-        }
 
         animator.SetFloat("VelocityX", Mathf.Abs(moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
-
-        stickHandOnEdge();
-
+        
         if (state == State.GRABED_EDGE)
         {
             comeToEdge();
@@ -72,26 +76,39 @@ public partial class BoyController : MonoBehaviour
     {
         if (state == State.EDGE_DETECTED || state == State.NEAR_EDGE || state == State.GRABED_EDGE)
         {
-            neckIK.position = leftHandIK.position = rightHandIK.position = edgePos;
+            setHandIKOnEdge();
         }
+        /*
+        if (state == State.GRABED_EDGE)
+        {
+            comeToEdge();
+        }*/
 
         if (state == State.NEAR_EDGE)
-        {
+        {/*
             Vector3 v = new Vector3(Mathf.Abs(handTransform.position.x - edgePos.x), 3f) + transform.position;
-            leftFootIK.position = rightFootIK.position = -v;
+            leftFootIK.position = rightFootIK.position = -v;*/
         }
     }
-    public void OnDrawGizmos()
+
+
+    public bool isFront(Vector3 objPos)
     {
-        Gizmos.DrawWireSphere(transform.position, 10);
-        Gizmos.DrawWireSphere(handTransform.position, circleRadius);
+        return (!flipFacing && transform.position.x < objPos.x) |
+                (flipFacing && transform.position.x > objPos.x);
     }
-    
+
     public void flipFace()
     {
         flipFacing = !flipFacing;
         Vector3 localScale = transform.localScale;
         localScale.x *= -1;
         transform.localScale = localScale;
+    }
+
+    public void OnDrawGizmos()
+    {
+        Gizmos.DrawWireSphere(transform.position, 10);
+        Gizmos.DrawWireSphere(handTransform.position, circleRadius);
     }
 }
