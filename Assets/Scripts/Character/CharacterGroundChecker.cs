@@ -5,24 +5,24 @@ public class CharacterGroundChecker : MonoBehaviour {
 
     public bool isGround;
     public bool canPicking;
-    public HumanController humanController;
+    public BoyController humanController;
 
     void OnTriggerEnter2D(Collider2D col)
     {
         if (col.tag == "Ground" || col.tag == "Box")
         {
             isGround = true;
-            humanController.getDamageFromFalling();
-            humanController.GetComponent<Rigidbody2D>().velocity = new Vector2();
+            /*humanController.getDamageFromFalling();
+            humanController.GetComponent<Rigidbody2D>().velocity = new Vector2();*/
         }
 
         if (col.tag == "Slider")
         {
             isGround = true;
-            humanController.getDamageFromFalling();
+            /*humanController.getDamageFromFalling();
             float speed = col.GetComponent<SurfaceEffector>().speed;
             if (!humanController.flipFacing && speed < 0 || humanController.flipFacing && speed > 0)
-                humanController.flipFace();
+                humanController.flipFace();*/
         }
     }
     void OnTriggerStay2D(Collider2D col)
