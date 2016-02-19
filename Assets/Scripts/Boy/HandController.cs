@@ -1,23 +1,40 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public partial class BoyController : MonoBehaviour
+public partial class BoyController 
 {
-
-    public int circleRadius = 5;
-    public int distanceRay = 0;
-    public Vector2 dirRay;
-
     Collider2D[] edges;
     Transform edge;
-    
-    public void detectEdges()
+    public float detectEdgeCirleOffsetY = 1;
+    public float detectEdgeCirleRadius = 5;
+    private Vector3 detectEdgeCirle;
+    /// <summary> 
+    /// Called in BoyController.LateUpdate() method.
+    /// when character detect near edge , he try connect hands 
+    /// on detected edge with this method.
+    /// </summary>
+    private void setHandIKOnEdge()
     {
-        edges = Physics2D.OverlapCircleAll(transform.position,
-            10, 1 << LayerMask.NameToLayer("Corner"));
+        if (characterGroundChecker.isGround || !isFront(edge.position))
+            return;
+
+        neckIK.position = edge.position;
+        leftHandIK.position = edge.position;
+        rightHandIK.position = edge.position; 
+    }
+
+    /// <summary>
+    /// Called in BoyController.Update() method.
+    /// called when state == IDLE , GRABING_EDGE , NEAR_EDGE ,EDGE_DETECTED
+    /// </summary>
+    public void detectEdgesAction()
+    {
+        detectEdgeCirle = transform.position;
+        detectEdgeCirle.y += detectEdgeCirleOffsetY;
+        edges = Physics2D.OverlapCircleAll(detectEdgeCirle,
+            detectEdgeCirleRadius, 1 << LayerMask.NameToLayer("Corner"));
 
         bool grabEdge = false;
-        bool _lockFliping = false;
 
         if (edges != null && edges.Length > 0)
         {
@@ -28,7 +45,6 @@ public partial class BoyController : MonoBehaviour
             {
                 state = State.GRABED_EDGE;
                 grabEdge = true;
-                _lockFliping = true;
             }
             else if (dis < 2)
             {
@@ -41,17 +57,45 @@ public partial class BoyController : MonoBehaviour
         }
         else
             state = State.IDLE;
-
-        lockFliping = _lockFliping;
+        
         animator.SetBool("GrabEdge", grabEdge);
     }
 
-    public void comeToEdge()
+    private void climbDownAction()
     {
-        //Vector2 min = handTransform.position - transform.position;
-        //transform.position = edgePos - min;
-        //handTransform.position = edgePos;
+        rigidBody2D.isKinematic = false;
+        animator.SetBool("GrabEdge", false);
+        if (_isGround)
+            state = State.IDLE;
+    }
 
+    private void climbUpAction()
+    {
+        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("ClimbUpFinish"))
+        {
+            animator.SetBool("ClimbingUp", true);
+            animator.SetBool("GrabEdge", false);
+        }
+        else
+        {
+            transform.position = bodyTransform.position;
+            bodyTransform.localPosition = Vector3.zero;
+            animator.SetBool("ClimbingUp", false);
+            animator.SetBool("GrabEdge", false);
+
+            rigidBody2D.isKinematic = false;
+            state = State.IDLE;;
+        }
+        //rigidBody2D.isKinematic = false;
+    }
+
+    /// <summary>
+    /// Called in BoyController.Update() method.
+    /// provice sticking on edge . this method stick character on edge.
+    /// called when state == GRABED_EDGE
+    /// </summary>
+    public void stickOnEdgeAction()
+    {
         if (rigidBody2D.isKinematic)
             return;
 
@@ -65,32 +109,4 @@ public partial class BoyController : MonoBehaviour
             }
         }
     }
-
-    private void setHandIKOnEdge()
-    {
-        if (characterGroundChecker.isGround || !isFront(edge.position))
-            return;
-
-        neckIK.position = edge.position;
-        leftHandIK.position = edge.position;//Vector3.Lerp(edgePos, leftHandIK.position, Time.deltaTime);
-        rightHandIK.position = edge.position; //Vector3.Lerp(edgePos, rightHandIK.position, Time.deltaTime);
-    }
-
-    /*
-    private void stickHandOnEdge()
-    {
-        var _edges = Physics2D.CircleCastAll(transform.position, circleRadius, dirRay, distanceRay,
-            1 << LayerMask.NameToLayer("Ground"));
-
-        if (_edges != null && _edges.Length > 0)
-        {
-            foreach (var e in _edges)
-            {
-                //float dis = Vector2.Distance(handTransform.position, edgePos);
-
-                Debug.DrawLine(handTransform.position, e.point, Color.cyan);
-            }
-        }
-    }*/
-
 }
