@@ -6,7 +6,8 @@ public partial class BoyController
 {
     private bool cornerDetected;
     private Transform edge;
-    
+    private Transform machineButton;
+    private bool machineBtnClickEnd = true;
     private bool boxDetected;
     private Transform box;
 
