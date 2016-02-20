@@ -5,10 +5,11 @@ using System.Collections;
 using System;
 
 public partial class BoyController : MonoBehaviour
-{
+{ 
     public enum State
-    {
-        IDLE, EDGE_DETECTED, NEAR_EDGE, GRABING_EDGE, GRABED_EDGE, CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE, NEAR_BUTTON
+    {  
+        IDLE , EDGE_DETECTED ,NEAR_EDGE , GRABING_EDGE , GRABED_EDGE , CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE ,
+        PUSHING_BOX , JUMP_FROM_BOX
     }
 
     public CharacterGroundChecker characterGroundChecker;
@@ -29,13 +30,13 @@ public partial class BoyController : MonoBehaviour
 
     private Rigidbody2D rigidBody2D;
     private Animator animator;
-
-    private bool lockFliping, lockMovement, lockJump;
+    
+    private bool lockFliping,lockMovement, lockJump;
     private CameraStress cameraStress;
 
     private bool _isGround;
-    private float _moveX, _moveY;
-
+    private float _moveX , _moveY;
+    
     private Collider2D[] detectibles;
     public float detectDetectibleCirleOffsetY = 1;
     public float detectDetectibleCirleRadius = 5;
@@ -59,36 +60,12 @@ public partial class BoyController : MonoBehaviour
             case State.GRABED_EDGE:
                 setHandIKOnEdge();
                 break;
-
-            case State.NEAR_BUTTON:
-                setHandIKOnButton();
+            case State.PUSHING_BOX:
+                setHandIKOnBox();
                 break;
             default:
                 break;
         }
-    }
-
-    private void setHandIKOnButton()
-    {
-        if (machineButton != null && isFront(machineButton.position))
-        {
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                machineBtnClickEnd = false;
-                rightHandIK.position = machineButton.position;
-                Invoke("cancleClickingMachineBtn" , 0.5f);
-            }
-            else
-            {
-                if(!machineBtnClickEnd)
-                    rightHandIK.position = machineButton.position;
-            }
-        }
-    }
-
-    void cancleClickingMachineBtn()
-    {
-        machineBtnClickEnd = true;
     }
 
     public void Update()
@@ -109,6 +86,7 @@ public partial class BoyController : MonoBehaviour
                 detectDetectibles();
                 detectCornersAction();
                 detectBoxesAction();
+                animator.SetFloat("MoveAnimSpeed", 1f);
                 break;
             case State.GRABED_EDGE:
                 detectClimbUpDownAction();
@@ -120,10 +98,16 @@ public partial class BoyController : MonoBehaviour
             case State.CLIMBING_DOWN_FROM_EDGE:
                 climbDownAction();
                 break;
-            case State.NEAR_BUTTON:
+            case State.PUSHING_BOX:
                 xMovementsAction();
-                jumpAction();
                 faceFlipingAction();
+                detectDetectibles();
+                detectBoxesAction();
+                detectJumpFromBoxAction();
+                animator.SetFloat("MoveAnimSpeed", .5f);
+                break;
+            case State.JUMP_FROM_BOX:
+                jumpFromBoxAction();
                 break;
             default:
                 break;
@@ -134,8 +118,23 @@ public partial class BoyController : MonoBehaviour
         animator.SetBool("IsGround", _isGround);
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
-        //float MoveAnimSpeed = Mathf.Abs(_moveX*maxSpeedX)/maxSpeedX;
-        //animator.SetFloat("MoveAnimSpeed", (MoveAnimSpeed < 0.5f)? 1 - MoveAnimSpeed : 1);
+    }
+
+    private void jumpFromBoxAction()
+    {
+        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("JumpFromBoxFinished"))
+        {
+            animator.SetBool("JumpFromBox", true);
+        }
+        else
+        {
+            transform.position = bodyTransform.position;
+            bodyTransform.localPosition = Vector3.zero;
+            animator.SetBool("JumpFromBox", false);
+
+            rigidBody2D.isKinematic = false;
+            state = State.IDLE;
+        }
     }
 
     public void detectDetectibles()
@@ -163,6 +162,13 @@ public partial class BoyController : MonoBehaviour
             state = State.CLIMBING_DOWN_FROM_EDGE;
         }
     }
+    private void detectJumpFromBoxAction()
+    {
+        if (_moveY > 0)
+        {
+            state = State.JUMP_FROM_BOX;
+        }
+    }
 
     private void jumpAction()
     {
@@ -176,9 +182,9 @@ public partial class BoyController : MonoBehaviour
     private void xMovementsAction()
     {
         if (_isGround && !lockMovement)
-            rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
+            rigidBody2D.velocity = new Vector2(_moveX*maxSpeedX, rigidBody2D.velocity.y);
     }
-
+    
     public bool isFront(Vector3 objPos)
     {
         return (!flipFacing && transform.position.x < objPos.x) | (flipFacing && transform.position.x > objPos.x);
@@ -197,22 +203,5 @@ public partial class BoyController : MonoBehaviour
         Vector3 v = transform.position;
         v.y += detectDetectibleCirleOffsetY;
         Gizmos.DrawWireSphere(v, detectDetectibleCirleRadius);
-    }
-    
-    public void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.tag == "Machine")
-        {
-            state = State.NEAR_BUTTON;
-            machineButton = collision.transform.GetChild(0);
-        }
-    }
-
-    public void OnTriggerExit2D(Collider2D collision)
-    {
-        if (collision.tag == "Machine")
-        {
-            state = State.IDLE;
-        }
     }
 }

@@ -6,10 +6,11 @@ public partial class BoyController
 {
     private bool cornerDetected;
     private Transform edge;
-    private Transform machineButton;
-    private bool machineBtnClickEnd = true;
+
     private bool boxDetected;
+    private bool handOnBox;
     private Transform box;
+    private Vector3 boxNearEdge;
 
     /// <summary> 
     /// Called in BoyController.LateUpdate() method.
@@ -26,18 +27,33 @@ public partial class BoyController
         rightHandIK.position = edge.position; 
     }
 
+    public void setHandIKOnBox()
+    {
+        if (!isFront(box.position))
+        {
+            state = State.IDLE;
+            return;
+        }
+
+        leftHandIK.position = boxNearEdge;
+        rightHandIK.position = boxNearEdge;
+    }
+
     /// <summary>
     /// Called in BoyController.Update() method.
     /// called when state == IDLE , GRABING_EDGE , NEAR_EDGE ,EDGE_DETECTED
     /// </summary>
-    public void detectCornersAction()
+    public bool detectCornersAction()
     {
         cornerDetected = false;
-        foreach (var d in detectibles.Where(d => d.tag == "Corner"))
+        foreach (var d in detectibles)
         {
-            edge = d.transform;
-            cornerDetected = true;
-            break;
+            if (d.tag == "Corner")
+            {
+                edge = d.transform;
+                cornerDetected = true;
+                break;
+            }
         }
         bool grabEdge = false;
 
@@ -63,21 +79,38 @@ public partial class BoyController
             state = State.IDLE;
         
         animator.SetBool("GrabEdge", grabEdge);
+        return cornerDetected;
     }
 
     public void detectBoxesAction()
     {
         boxDetected = false;
-        foreach (var d in detectibles.Where(d => d.tag == "Corner"))
+        foreach (var d in detectibles)
         {
-            box = d.transform;
-            cornerDetected = true;
-            break;
+            if (d.tag == "Box")
+            {
+                box = d.transform;
+                boxDetected = true;
+                break;
+            }
         }
 
         if (boxDetected)
         {
-            
+            Vector3 v = transform.position;
+            v.y += 1.3f;
+            RaycastHit2D r = Physics2D.Linecast(v, box.position,
+                1 << LayerMask.NameToLayer("Detectible"));
+
+            Debug.DrawLine(v, r.point, Color.cyan);
+            boxNearEdge = r.point;
+            handOnBox = true;
+            state = State.PUSHING_BOX;
+        }
+        else if (handOnBox)
+        {
+            if(state == State.PUSHING_BOX)
+                state = State.IDLE;
         }
     }
 
@@ -104,9 +137,8 @@ public partial class BoyController
             animator.SetBool("GrabEdge", false);
 
             rigidBody2D.isKinematic = false;
-            state = State.IDLE;;
+            state = State.IDLE;
         }
-        //rigidBody2D.isKinematic = false;
     }
 
     /// <summary>
