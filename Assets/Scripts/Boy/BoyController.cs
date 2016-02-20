@@ -35,6 +35,11 @@ public partial class BoyController : MonoBehaviour
 
     private bool _isGround;
     private float _moveX , _moveY;
+    
+    private Collider2D[] detectibles;
+    public float detectDetectibleCirleOffsetY = 1;
+    public float detectDetectibleCirleRadius = 5;
+    private Vector3 detectDetectibleCirle;
 
     public void Start()
     {
@@ -74,7 +79,9 @@ public partial class BoyController : MonoBehaviour
                 xMovementsAction();
                 jumpAction();
                 faceFlipingAction();
-                detectEdgesAction();
+                detectDetectibles();
+                detectCornersAction();
+                detectBoxesAction();
                 break;
             case State.GRABED_EDGE:
                 detectClimbUpDownAction();
@@ -92,10 +99,20 @@ public partial class BoyController : MonoBehaviour
 
         print(state);
 
+        animator.SetBool("IsGround", _isGround);
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX*maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
+        //float MoveAnimSpeed = Mathf.Abs(_moveX*maxSpeedX)/maxSpeedX;
+        //animator.SetFloat("MoveAnimSpeed", (MoveAnimSpeed < 0.5f)? 1 - MoveAnimSpeed : 1);
     }
 
+    public void detectDetectibles()
+    {
+        detectDetectibleCirle = transform.position;
+        detectDetectibleCirle.y += detectDetectibleCirleOffsetY;
+        detectibles = Physics2D.OverlapCircleAll(detectDetectibleCirle,
+            detectDetectibleCirleRadius, 1 << LayerMask.NameToLayer("Detectible"));
+    }
 
     private void faceFlipingAction()
     {
@@ -146,7 +163,7 @@ public partial class BoyController : MonoBehaviour
     public void OnDrawGizmos()
     {
         Vector3 v = transform.position;
-        v.y += detectEdgeCirleOffsetY;
-        Gizmos.DrawWireSphere(v, detectEdgeCirleRadius);
+        v.y += detectDetectibleCirleOffsetY;
+        Gizmos.DrawWireSphere(v, detectDetectibleCirleRadius);
     }
 }

@@ -1,13 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Linq;
 
-public partial class BoyController 
+public partial class BoyController
 {
-    Collider2D[] edges;
-    Transform edge;
-    public float detectEdgeCirleOffsetY = 1;
-    public float detectEdgeCirleRadius = 5;
-    private Vector3 detectEdgeCirle;
+    private bool cornerDetected;
+    private Transform edge;
+    
+    private bool boxDetected;
+    private Transform box;
+
     /// <summary> 
     /// Called in BoyController.LateUpdate() method.
     /// when character detect near edge , he try connect hands 
@@ -27,18 +29,19 @@ public partial class BoyController
     /// Called in BoyController.Update() method.
     /// called when state == IDLE , GRABING_EDGE , NEAR_EDGE ,EDGE_DETECTED
     /// </summary>
-    public void detectEdgesAction()
+    public void detectCornersAction()
     {
-        detectEdgeCirle = transform.position;
-        detectEdgeCirle.y += detectEdgeCirleOffsetY;
-        edges = Physics2D.OverlapCircleAll(detectEdgeCirle,
-            detectEdgeCirleRadius, 1 << LayerMask.NameToLayer("Corner"));
-
+        cornerDetected = false;
+        foreach (var d in detectibles.Where(d => d.tag == "Corner"))
+        {
+            edge = d.transform;
+            cornerDetected = true;
+            break;
+        }
         bool grabEdge = false;
 
-        if (edges != null && edges.Length > 0)
+        if (cornerDetected)
         {
-            edge = edges[0].transform;
             float dis = Vector2.Distance(handTransform.position, edge.position);
 
             if (dis < 0.7f)
@@ -59,6 +62,22 @@ public partial class BoyController
             state = State.IDLE;
         
         animator.SetBool("GrabEdge", grabEdge);
+    }
+
+    public void detectBoxesAction()
+    {
+        boxDetected = false;
+        foreach (var d in detectibles.Where(d => d.tag == "Corner"))
+        {
+            box = d.transform;
+            cornerDetected = true;
+            break;
+        }
+
+        if (boxDetected)
+        {
+            
+        }
     }
 
     private void climbDownAction()
