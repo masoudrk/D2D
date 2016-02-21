@@ -12,6 +12,8 @@ public partial class BoyController
     private Transform box;
     private Vector3 boxNearEdge;
 
+    private Transform machineButton;
+    private bool machineBtnClickEnd = true;
     /// <summary> 
     /// Called in BoyController.LateUpdate() method.
     /// when character detect near edge , he try connect hands 
@@ -37,6 +39,24 @@ public partial class BoyController
 
         leftHandIK.position = boxNearEdge;
         rightHandIK.position = boxNearEdge;
+    }
+
+    private void setHandIKOnButton()
+    {
+        if (machineButton != null && isFront(machineButton.position))
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                machineBtnClickEnd = false;
+                rightHandIK.position = machineButton.position;
+                Invoke("cancleClickingMachineBtn", 0.5f);
+            }
+            else
+            {
+                if (!machineBtnClickEnd)
+                    rightHandIK.position = machineButton.position;
+            }
+        }
     }
 
     /// <summary>
@@ -139,6 +159,10 @@ public partial class BoyController
             rigidBody2D.isKinematic = false;
             state = State.IDLE;
         }
+    }
+    public void cancleClickingMachineBtn()
+    {
+        machineBtnClickEnd = true;
     }
 
     /// <summary>

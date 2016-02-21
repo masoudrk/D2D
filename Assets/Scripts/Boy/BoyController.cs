@@ -9,7 +9,7 @@ public partial class BoyController : MonoBehaviour
     public enum State
     {  
         IDLE , EDGE_DETECTED ,NEAR_EDGE , GRABING_EDGE , GRABED_EDGE , CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE ,
-        PUSHING_BOX , JUMP_FROM_BOX
+        PUSHING_BOX , JUMP_FROM_BOX, NEAR_BUTTON
     }
 
     public CharacterGroundChecker characterGroundChecker;
@@ -63,11 +63,13 @@ public partial class BoyController : MonoBehaviour
             case State.PUSHING_BOX:
                 setHandIKOnBox();
                 break;
+            case State.NEAR_BUTTON:
+                setHandIKOnButton();
+                break;
             default:
                 break;
         }
     }
-
     public void Update()
     {
         _isGround = characterGroundChecker.isGround;
@@ -108,6 +110,11 @@ public partial class BoyController : MonoBehaviour
                 break;
             case State.JUMP_FROM_BOX:
                 jumpFromBoxAction();
+                break;
+            case State.NEAR_BUTTON:
+                xMovementsAction();
+                jumpAction();
+                faceFlipingAction();
                 break;
             default:
                 break;
@@ -198,6 +205,23 @@ public partial class BoyController : MonoBehaviour
         transform.localScale = localScale;
     }
 
+
+    public void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.tag == "Machine")
+        {
+            state = State.NEAR_BUTTON;
+            machineButton = collision.transform.GetChild(0);
+        }
+    }
+
+    public void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.tag == "Machine")
+        {
+            state = State.IDLE;
+        }
+    }
     public void OnDrawGizmos()
     {
         Vector3 v = transform.position;
