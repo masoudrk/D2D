@@ -12,6 +12,8 @@ public partial class BoyController : MonoBehaviour
         PUSHING_BOX , JUMP_FROM_BOX, NEAR_BUTTON
     }
 
+    public ETCJoystick joystick;
+    public ETCButton btnJump;
     public CharacterGroundChecker characterGroundChecker;
 
     private State state;
@@ -35,13 +37,14 @@ public partial class BoyController : MonoBehaviour
     private CameraStress cameraStress;
 
     private bool _isGround;
-    private float _moveX , _moveY;
+    private bool jump;
+    public float _moveX;
     
     private Collider2D[] detectibles;
     public float detectDetectibleCirleOffsetY = 1;
     public float detectDetectibleCirleRadius = 5;
     private Vector3 detectDetectibleCirle;
-
+    
     public void Start()
     {
         lockJump = lockMovement = lockFliping = false;
@@ -73,8 +76,8 @@ public partial class BoyController : MonoBehaviour
     public void Update()
     {
         _isGround = characterGroundChecker.isGround;
-        _moveX = Input.GetAxis("Horizontal");
-        _moveY = Input.GetAxisRaw("Vertical");
+        _moveX = joystick.axisX.axisValue;
+        jump = btnJump.axis.axisValue > 0;
 
         switch (state)
         {
@@ -88,7 +91,7 @@ public partial class BoyController : MonoBehaviour
                 detectDetectibles();
                 detectCornersAction();
                 detectBoxesAction();
-                animator.SetFloat("MoveAnimSpeed", 1f);
+                animator.SetFloat("MoveAnimSpeed",Math.Abs(_moveX));
                 break;
             case State.GRABED_EDGE:
                 detectClimbUpDownAction();
@@ -160,18 +163,18 @@ public partial class BoyController : MonoBehaviour
 
     private void detectClimbUpDownAction()
     {
-        if (_moveY > 0)
+        if (jump)
         {
             state = State.CLIMBING_UP_FROM_EDGE;
         }
-        else if (_moveY < 0)
+        else if (jump)
         {
             state = State.CLIMBING_DOWN_FROM_EDGE;
         }
     }
     private void detectJumpFromBoxAction()
     {
-        if (_moveY > 0)
+        if (jump)
         {
             state = State.JUMP_FROM_BOX;
         }
@@ -179,7 +182,7 @@ public partial class BoyController : MonoBehaviour
 
     private void jumpAction()
     {
-        if (_moveY > 0 && _isGround && !lockJump)
+        if (jump && _isGround && !lockJump)
         {
             if (rigidBody2D.velocity.y < 5)
                 rigidBody2D.velocity = new Vector2(rigidBody2D.velocity.x, 15);
