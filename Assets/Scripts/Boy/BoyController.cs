@@ -9,7 +9,7 @@ public partial class BoyController : MonoBehaviour
 {
     public enum State
     {
-        IDLE, EDGE_DETECTED, NEAR_EDGE, GRABING_EDGE, GRABED_EDGE, CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE,
+        IDLE, CORNER_DETECTED, NEAR_CORNER, GRABING_EDGE, GRABED_CORNER, CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE,
         NEAR_BOX, PULLING_BOX, JUMP_FROM_BOX, NEAR_BUTTON
     }
 
@@ -40,7 +40,7 @@ public partial class BoyController : MonoBehaviour
 
     private bool _isGround;
     private bool jumpBtn, helpBtnPress;
-    public float _moveX;
+    public float _moveX , _moveY;
 
     private Collider2D[] detectibles;
     public float detectDetectibleCirleOffsetY = 1;
@@ -59,11 +59,11 @@ public partial class BoyController : MonoBehaviour
     {
         switch (state)
         {
-            case State.EDGE_DETECTED:
-            case State.NEAR_EDGE:
+            case State.CORNER_DETECTED:
+            case State.NEAR_CORNER:
             case State.GRABING_EDGE:
-            case State.GRABED_EDGE:
-                setHandIKOnEdge();
+            case State.GRABED_CORNER:
+                setHandIKOnCorner();
                 break;
             case State.NEAR_BOX:
             case State.PULLING_BOX:
@@ -80,13 +80,14 @@ public partial class BoyController : MonoBehaviour
     {
         _isGround = characterGroundChecker.isGround;
         _moveX = joystick.axisX.axisValue;
+        _moveY = joystick.axisY.axisValue;
         jumpBtn = btn1.axis.axisValue > 0;
         helpBtnPress = btn2.axis.axisValue > 0;
 
         switch (state)
         {
-            case State.NEAR_EDGE:
-            case State.EDGE_DETECTED:
+            case State.NEAR_CORNER:
+            case State.CORNER_DETECTED:
             case State.GRABING_EDGE:
             case State.IDLE:
                 xMovementsAction();
@@ -97,9 +98,9 @@ public partial class BoyController : MonoBehaviour
                 detectBoxesAction();
                 animator.SetFloat("MoveAnimSpeed", Math.Abs(_moveX));
                 break;
-            case State.GRABED_EDGE:
+            case State.GRABED_CORNER:
                 detectClimbUpDownAction();
-                stickOnEdgeAction();
+                stickOnCornerAction();
                 break;
             case State.CLIMBING_UP_FROM_EDGE:
                 climbUpAction();
@@ -130,6 +131,8 @@ public partial class BoyController : MonoBehaviour
             default:
                 break;
         }
+
+        print(state.ToString());
 
         animator.SetBool("IsGround", _isGround);
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX * maxSpeedX));
@@ -212,7 +215,7 @@ public partial class BoyController : MonoBehaviour
         {
             state = State.CLIMBING_UP_FROM_EDGE;
         }
-        else if (jumpBtn)
+        else if (_moveY <-0.5f)
         {
             state = State.CLIMBING_DOWN_FROM_EDGE;
         }
