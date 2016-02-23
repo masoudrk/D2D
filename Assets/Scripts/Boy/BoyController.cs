@@ -3,13 +3,14 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using System.Runtime.Remoting.Messaging;
 
 public partial class BoyController : MonoBehaviour
-{ 
+{
     public enum State
-    {  
-        IDLE , EDGE_DETECTED ,NEAR_EDGE , GRABING_EDGE , GRABED_EDGE , CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE ,
-        PUSHING_BOX , JUMP_FROM_BOX, NEAR_BUTTON
+    {
+        IDLE, EDGE_DETECTED, NEAR_EDGE, GRABING_EDGE, GRABED_EDGE, CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE,
+        NEAR_BOX, PULLING_BOX, JUMP_FROM_BOX, NEAR_BUTTON
     }
 
     public ETCJoystick joystick;
@@ -33,19 +34,19 @@ public partial class BoyController : MonoBehaviour
 
     private Rigidbody2D rigidBody2D;
     private Animator animator;
-    
-    private bool lockFliping,lockMovement, lockJump;
+
+    private bool lockFliping, lockMovement, lockJump;
     private CameraStress cameraStress;
 
     private bool _isGround;
-    private bool jump;
+    private bool jumpBtn, helpBtnPress;
     public float _moveX;
-    
+
     private Collider2D[] detectibles;
     public float detectDetectibleCirleOffsetY = 1;
     public float detectDetectibleCirleRadius = 5;
     private Vector3 detectDetectibleCirle;
-    
+
     public void Start()
     {
         lockJump = lockMovement = lockFliping = false;
@@ -64,7 +65,8 @@ public partial class BoyController : MonoBehaviour
             case State.GRABED_EDGE:
                 setHandIKOnEdge();
                 break;
-            case State.PUSHING_BOX:
+            case State.NEAR_BOX:
+            case State.PULLING_BOX:
                 setHandIKOnBox();
                 break;
             case State.NEAR_BUTTON:
@@ -78,7 +80,8 @@ public partial class BoyController : MonoBehaviour
     {
         _isGround = characterGroundChecker.isGround;
         _moveX = joystick.axisX.axisValue;
-        jump = btn1.axis.axisValue > 0;
+        jumpBtn = btn1.axis.axisValue > 0;
+        helpBtnPress = btn2.axis.axisValue > 0;
 
         switch (state)
         {
@@ -92,7 +95,7 @@ public partial class BoyController : MonoBehaviour
                 detectDetectibles();
                 detectCornersAction();
                 detectBoxesAction();
-                animator.SetFloat("MoveAnimSpeed",Math.Abs(_moveX));
+                animator.SetFloat("MoveAnimSpeed", Math.Abs(_moveX));
                 break;
             case State.GRABED_EDGE:
                 detectClimbUpDownAction();
@@ -104,12 +107,16 @@ public partial class BoyController : MonoBehaviour
             case State.CLIMBING_DOWN_FROM_EDGE:
                 climbDownAction();
                 break;
-            case State.PUSHING_BOX:
+            case State.PULLING_BOX:
+                pullingBoxAction();
+                break;
+            case State.NEAR_BOX:
                 xMovementsAction();
                 faceFlipingAction();
                 detectDetectibles();
                 detectBoxesAction();
                 detectJumpFromBoxAction();
+                detectPullingBox();
                 animator.SetFloat("MoveAnimSpeed", .5f);
                 break;
             case State.JUMP_FROM_BOX:
@@ -124,13 +131,62 @@ public partial class BoyController : MonoBehaviour
                 break;
         }
 
-        print(state);
-
         animator.SetBool("IsGround", _isGround);
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
     }
 
+    private void pullingBoxAction()
+    {
+        if (!helpBtnPress)
+        {
+            connectBoxJoint(false);
+            state = State.NEAR_BOX;
+            return;
+        }
+
+        findBoxNearEdge();
+        if ((flipFacing && _moveX > 0) || (!flipFacing && _moveX < 0))
+        {
+            //pulling box
+            connectBoxJoint(true);
+            rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
+            animator.SetFloat("MoveAnimSpeed", -.5f);
+            isPulling = true;
+        }
+        else if (_moveX != 0)
+        {
+            //pushing box
+
+            /*
+            connectBoxJoint(false);
+            state = State.NEAR_BOX;
+            */
+            connectBoxJoint(false);
+            rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
+            animator.SetFloat("MoveAnimSpeed", .5f);
+            isPulling = false;
+        }
+
+    }
+
+    #region Box Methods
+
+    private void detectPullingBox()
+    {
+        if (helpBtnPress)
+        {
+            pullBoxJoint2D = box2D.GetComponent<DistanceJoint2D>();
+            state = State.PULLING_BOX;
+        }
+    }
+    private void detectJumpFromBoxAction()
+    {
+        if (jumpBtn)
+        {
+            state = State.JUMP_FROM_BOX;
+        }
+    }
     private void jumpFromBoxAction()
     {
         if (!animator.GetCurrentAnimatorStateInfo(0).IsName("JumpFromBoxFinished"))
@@ -147,7 +203,23 @@ public partial class BoyController : MonoBehaviour
             state = State.IDLE;
         }
     }
+    #endregion
 
+    #region Corner Methods
+    private void detectClimbUpDownAction()
+    {
+        if (jumpBtn)
+        {
+            state = State.CLIMBING_UP_FROM_EDGE;
+        }
+        else if (jumpBtn)
+        {
+            state = State.CLIMBING_DOWN_FROM_EDGE;
+        }
+    }
+    #endregion
+
+    #region Generic Methods
     public void detectDetectibles()
     {
         detectDetectibleCirle = transform.position;
@@ -155,52 +227,28 @@ public partial class BoyController : MonoBehaviour
         detectibles = Physics2D.OverlapCircleAll(detectDetectibleCirle,
             detectDetectibleCirleRadius, 1 << LayerMask.NameToLayer("Detectible"));
     }
-
     private void faceFlipingAction()
     {
         if ((_moveX > 0 && flipFacing) || (_moveX < 0 && !flipFacing) && !lockFliping)
             flipFace();
     }
-
-    private void detectClimbUpDownAction()
-    {
-        if (jump)
-        {
-            state = State.CLIMBING_UP_FROM_EDGE;
-        }
-        else if (jump)
-        {
-            state = State.CLIMBING_DOWN_FROM_EDGE;
-        }
-    }
-    private void detectJumpFromBoxAction()
-    {
-        if (jump)
-        {
-            state = State.JUMP_FROM_BOX;
-        }
-    }
-
     private void jumpAction()
     {
-        if (jump && _isGround && !lockJump)
+        if (jumpBtn && _isGround && !lockJump)
         {
             if (rigidBody2D.velocity.y < 5)
                 rigidBody2D.velocity = new Vector2(rigidBody2D.velocity.x, 15);
         }
     }
-
     private void xMovementsAction()
     {
         if (_isGround && !lockMovement)
-            rigidBody2D.velocity = new Vector2(_moveX*maxSpeedX, rigidBody2D.velocity.y);
+            rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
     }
-    
     public bool isFront(Vector3 objPos)
     {
         return (!flipFacing && transform.position.x < objPos.x) | (flipFacing && transform.position.x > objPos.x);
     }
-
     public void flipFace()
     {
         flipFacing = !flipFacing;
@@ -208,7 +256,7 @@ public partial class BoyController : MonoBehaviour
         localScale.x *= -1;
         transform.localScale = localScale;
     }
-
+    #endregion
 
     public void OnTriggerEnter2D(Collider2D collision)
     {
@@ -218,7 +266,6 @@ public partial class BoyController : MonoBehaviour
             machineButton = collision.transform.GetChild(0);
         }
     }
-
     public void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.tag == "Machine")
@@ -231,5 +278,9 @@ public partial class BoyController : MonoBehaviour
         Vector3 v = transform.position;
         v.y += detectDetectibleCirleOffsetY;
         Gizmos.DrawWireSphere(v, detectDetectibleCirleRadius);
+    }
+    public void OnGUI()
+    {
+        GUI.Box(new Rect(0, 0, 200, 20), state.ToString());
     }
 }
