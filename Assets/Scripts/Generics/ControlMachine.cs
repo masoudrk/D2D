@@ -13,12 +13,14 @@ public class ControlMachine : MonoBehaviour {
     Transform timingLamp;
     public Sprite[] numbers;
     public SpriteRenderer panelSprite;
+    private int i;
     void Start()
     {
         animator = GetComponent<Animator>();
         timingLamp = transform.GetChild(0);
         int panelNum = (int) timeOffset;
         panelSprite.sprite = numbers[panelNum];
+        i = panelNum;
     }
 
     void Update()
@@ -26,14 +28,19 @@ public class ControlMachine : MonoBehaviour {
         if(ready && Input.GetKeyDown(KeyCode.LeftShift) && !outPut)
         {
 
-                if(!IsInvoking("turnOnTheMachine"))
-                    Invoke("turnOnTheMachine", timeOffset);
+            if (!IsInvoking("turnOnTheMachine"))
+            {
+                Invoke("turnOnTheMachine", timeOffset);
+                StartCoroutine(CountDown(1f));
+            }
         }
 
         if(timingLamp.localScale.x <= 0)
         {
             outPut = false;
             animator.SetBool("On", outPut);
+            i = (int)timeOffset;
+            panelSprite.sprite = numbers[i];
             timingLamp.localScale = new Vector3(1, 1, 1);
             CancelInvoke("startCount");
             timingLamp.gameObject.SetActive(false);
@@ -48,6 +55,14 @@ public class ControlMachine : MonoBehaviour {
         }
     }
 
+    IEnumerator CountDown(float waitTime)
+    {
+        while (i > 0)
+        {
+            panelSprite.sprite = numbers[--i];
+            yield return new WaitForSeconds(waitTime);
+        }
+    }
 
     void OnTriggerStay2D(Collider2D col)
     {
