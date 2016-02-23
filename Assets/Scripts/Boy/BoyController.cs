@@ -13,7 +13,8 @@ public partial class BoyController : MonoBehaviour
     }
 
     public ETCJoystick joystick;
-    public ETCButton btnJump;
+    public ETCButton btn1;
+    public ETCButton btn2;
     public CharacterGroundChecker characterGroundChecker;
 
     private State state;
@@ -77,7 +78,7 @@ public partial class BoyController : MonoBehaviour
     {
         _isGround = characterGroundChecker.isGround;
         _moveX = joystick.axisX.axisValue;
-        jump = btnJump.axis.axisValue > 0;
+        jump = btn1.axis.axisValue > 0;
 
         switch (state)
         {
