@@ -136,6 +136,9 @@ public partial class BoyController : MonoBehaviour
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
     }
 
+
+    #region Box Methods
+
     private void pullingBoxAction()
     {
         if (!helpBtnPress)
@@ -169,9 +172,6 @@ public partial class BoyController : MonoBehaviour
         }
 
     }
-
-    #region Box Methods
-
     private void detectPullingBox()
     {
         if (helpBtnPress)
