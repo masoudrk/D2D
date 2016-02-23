@@ -135,8 +135,7 @@ public partial class BoyController : MonoBehaviour
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
     }
-
-
+    
     #region Box Methods
 
     private void pullingBoxAction()
