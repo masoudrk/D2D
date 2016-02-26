@@ -10,8 +10,10 @@ public partial class BoyController : MonoBehaviour
     public enum State
     {
         IDLE, CORNER_DETECTED, NEAR_CORNER, GRABING_EDGE, GRABED_CORNER, CLIMBING_UP_FROM_EDGE, CLIMBING_DOWN_FROM_EDGE,
-        NEAR_BOX, PULLING_BOX, JUMP_FROM_BOX, NEAR_BUTTON
+        NEAR_BOX, PULLING_BOX, JUMP_FROM_BOX, NEAR_BUTTON, NEAR_ROPE , GRABED_ROPE
     }
+
+    private float defaultMass , defaultFootsDamping , defaultHandsDamping;
 
     public ETCJoystick joystick;
     public ETCButton btn1;
@@ -28,6 +30,13 @@ public partial class BoyController : MonoBehaviour
 
     public Transform handTransform;
     public Transform bodyTransform;
+
+    public SimpleCCD rightHandCCD;
+    public SimpleCCD leftHandCCD;
+    public SimpleCCD rightFootCCD;
+    public SimpleCCD leftFootCCD;
+
+    public GameObject boyCollider;
 
     public float maxSpeedX;
     public bool flipFacing;
@@ -53,6 +62,10 @@ public partial class BoyController : MonoBehaviour
         state = State.IDLE;
         rigidBody2D = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+
+        defaultFootsDamping = leftFootCCD.damping;
+        defaultHandsDamping = rightFootCCD.damping;
+        defaultMass = rigidBody2D.mass;
     }
 
     public void LateUpdate()
@@ -71,6 +84,9 @@ public partial class BoyController : MonoBehaviour
                 break;
             case State.NEAR_BUTTON:
                 setHandIKOnButton();
+                break;
+            case State.GRABED_ROPE:
+                setHandIKOnRope();
                 break;
             default:
                 break;
@@ -96,20 +112,26 @@ public partial class BoyController : MonoBehaviour
                 detectDetectibles();
                 detectCornersAction();
                 detectBoxesAction();
+                detectRopeAction();
                 animator.SetFloat("MoveAnimSpeed", Math.Abs(_moveX));
+                setAnimator();
                 break;
             case State.GRABED_CORNER:
                 detectClimbUpDownAction();
                 stickOnCornerAction();
+                setAnimator();
                 break;
             case State.CLIMBING_UP_FROM_EDGE:
                 climbUpAction();
+                setAnimator();
                 break;
             case State.CLIMBING_DOWN_FROM_EDGE:
                 climbDownAction();
+                setAnimator();
                 break;
             case State.PULLING_BOX:
                 pullingBoxAction();
+                setAnimator();
                 break;
             case State.NEAR_BOX:
                 xMovementsAction();
@@ -119,24 +141,40 @@ public partial class BoyController : MonoBehaviour
                 detectJumpFromBoxAction();
                 detectPullingBox();
                 animator.SetFloat("MoveAnimSpeed", .5f);
+                setAnimator();
                 break;
             case State.JUMP_FROM_BOX:
                 jumpFromBoxAction();
+                setAnimator();
                 break;
             case State.NEAR_BUTTON:
                 xMovementsAction();
                 jumpAction();
                 faceFlipingAction();
+                setAnimator();
+                break; 
+            case State.GRABED_ROPE:
+                ropeInputAction();
+                resetAnimator();
                 break;
             default:
                 break;
         }
 
         print(state.ToString());
+    }
 
+    private void setAnimator()
+    {
         animator.SetBool("IsGround", _isGround);
         animator.SetFloat("VelocityX", Mathf.Abs(_moveX * maxSpeedX));
         animator.SetFloat("VelocityY", rigidBody2D.velocity.y);
+    }
+    private void resetAnimator()
+    {
+        animator.SetBool("IsGround", false);
+        animator.SetFloat("VelocityX", 0);
+        animator.SetFloat("VelocityY", 0);
     }
 
 
@@ -243,11 +281,13 @@ public partial class BoyController : MonoBehaviour
                 rigidBody2D.velocity = new Vector2(rigidBody2D.velocity.x, 15);
         }
     }
+
     private void xMovementsAction()
     {
         if (_isGround && !lockMovement)
             rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
     }
+
     public bool isFront(Vector3 objPos)
     {
         return (!flipFacing && transform.position.x < objPos.x) | (flipFacing && transform.position.x > objPos.x);

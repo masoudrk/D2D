@@ -1,11 +1,13 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections;
 
-public class RopeNode : MonoBehaviour {
-
+public class RopeNode : MonoBehaviour
+{
+    public int ropeTagNumber ;
     public RopeNode perviuosNode , nextNode;
 
-	void Start () {
-	
+	void Start ()
+    { 
 	}
 }

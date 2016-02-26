@@ -93,7 +93,8 @@ public class SimpleCCD : MonoBehaviour {
 
         // Wanted angle for rotation
         angle = -(angle - transform.eulerAngles.z);
-
+        if(nodeCache == null)
+            Start();
         // Take care of angle limits 
         if (nodeCache.ContainsKey(transform))
         {
