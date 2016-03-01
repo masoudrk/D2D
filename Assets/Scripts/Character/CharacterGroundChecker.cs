@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Linq;
 
 public class CharacterGroundChecker : MonoBehaviour {
 
@@ -50,4 +51,12 @@ public class CharacterGroundChecker : MonoBehaviour {
         if(col.tag == "Pickable")
             canPicking = false;
     }
+    /*
+    void Update()
+    {
+        Collider2D[] col = Physics2D.OverlapCircleAll(transform.position, 1.1f);
+        isGround = col.(item => item.tag == "Ground")
+        | col.Any(item => item.tag == "Box")
+        | col.Any(item => item.tag == "Slider");
+    }*/
 }

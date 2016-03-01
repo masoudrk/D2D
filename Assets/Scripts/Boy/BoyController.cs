@@ -117,7 +117,7 @@ public partial class BoyController : MonoBehaviour
                 setAnimator();
                 break;
             case State.GRABED_CORNER:
-                detectClimbUpDownAction();
+                cornerClimbUpDownInputAction();
                 stickOnCornerAction();
                 setAnimator();
                 break;
@@ -138,8 +138,8 @@ public partial class BoyController : MonoBehaviour
                 faceFlipingAction();
                 detectDetectibles();
                 detectBoxesAction();
-                detectJumpFromBoxAction();
                 detectPullingBox();
+                detectJumpFromBoxAction();
                 animator.SetFloat("MoveAnimSpeed", .5f);
                 setAnimator();
                 break;
@@ -161,7 +161,7 @@ public partial class BoyController : MonoBehaviour
                 break;
         }
 
-        print(state.ToString());
+        //print(state.ToString());
     }
 
     private void setAnimator()
@@ -176,12 +176,18 @@ public partial class BoyController : MonoBehaviour
         animator.SetFloat("VelocityX", 0);
         animator.SetFloat("VelocityY", 0);
     }
-
-
+    
     #region Box Methods
 
     private void pullingBoxAction()
     {
+        detectDetectibles();
+        if (!isDetected("Box"))
+        {
+            connectBoxJoint(false);
+            state = State.IDLE;
+        }
+
         if (!helpBtnPress)
         {
             connectBoxJoint(false);
@@ -201,11 +207,6 @@ public partial class BoyController : MonoBehaviour
         else if (_moveX != 0)
         {
             //pushing box
-
-            /*
-            connectBoxJoint(false);
-            state = State.NEAR_BOX;
-            */
             connectBoxJoint(false);
             rigidBody2D.velocity = new Vector2(_moveX * maxSpeedX, rigidBody2D.velocity.y);
             animator.SetFloat("MoveAnimSpeed", .5f);
@@ -217,7 +218,7 @@ public partial class BoyController : MonoBehaviour
     {
         if (helpBtnPress)
         {
-            pullBoxJoint2D = box2D.GetComponent<DistanceJoint2D>();
+            pullBoxJoint2D = boxTransform.GetComponent<DistanceJoint2D>();
             state = State.PULLING_BOX;
         }
     }
@@ -225,7 +226,20 @@ public partial class BoyController : MonoBehaviour
     {
         if (jumpBtn)
         {
-            state = State.JUMP_FROM_BOX;
+            Box box = boxTransform.GetComponent<Box>();
+            bool canDo = box.canJumpUpFrom;
+
+            if (canDo)
+            {
+                state = State.JUMP_FROM_BOX;
+            }
+            else
+            {
+                corner = box.jumpCorner;
+                animator.SetBool("GrabEdge", true);
+                animator.SetBool("ClimbingUp", true);
+                state = State.CLIMBING_UP_FROM_EDGE;
+            }
         }
     }
     private void jumpFromBoxAction()
@@ -244,23 +258,28 @@ public partial class BoyController : MonoBehaviour
             state = State.IDLE;
         }
     }
-    #endregion
 
-    #region Corner Methods
-    private void detectClimbUpDownAction()
-    {
-        if (jumpBtn)
-        {
-            state = State.CLIMBING_UP_FROM_EDGE;
-        }
-        else if (_moveY <-0.5f)
-        {
-            state = State.CLIMBING_DOWN_FROM_EDGE;
-        }
-    }
     #endregion
 
     #region Generic Methods
+    private bool isDetected(ref Transform fillIt, string tagStr)
+    {
+        foreach (var d in detectibles)
+        {
+            if (d.tag != tagStr) continue;
+            fillIt = d.transform;
+            return true;
+        }
+        return false;
+    }
+    private Transform isDetected(string tagStr)
+    {
+        foreach (var d in detectibles)
+            if (d.tag == tagStr)
+                return d.transform;
+        return null;
+    }
+
     public void detectDetectibles()
     {
         detectDetectibleCirle = transform.position;

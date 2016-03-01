@@ -14,7 +14,6 @@ public partial class BoyController
     private bool handOnBox;
     private bool isPulling;
     private Transform boxTransform;
-    private GameObject box2D;
     private Vector3 boxNearEdge;
     private DistanceJoint2D pullBoxJoint2D;
 
@@ -202,21 +201,10 @@ public partial class BoyController
     {
         pullBoxJoint2D.enabled = en;
     }
+
     public void detectBoxesAction()
     {
-        boxDetected = false;
-        foreach (var d in detectibles)
-        {
-            if (d.tag == "Box")
-            {
-                box2D = d.gameObject;
-                boxTransform = d.transform;
-                boxDetected = true;
-                break;
-            }
-        }
-
-        if (boxDetected)
+        if (isDetected(ref boxTransform, "Box"))
         {
             findBoxNearEdge();
 
@@ -289,6 +277,17 @@ public partial class BoyController
             }
         }
     }
+    private void cornerClimbUpDownInputAction()
+    {
+        if (jumpBtn)
+        {
+            state = State.CLIMBING_UP_FROM_EDGE;
+        }
+        else if (_moveY < -0.5f)
+        {
+            state = State.CLIMBING_DOWN_FROM_EDGE;
+        }
+    }
 
     /// <summary>
     /// Called in BoyController.Update() method.
@@ -345,7 +344,7 @@ public partial class BoyController
         if (!animator.GetCurrentAnimatorStateInfo(0).IsName("ClimbUpFinish"))
         {
             animator.SetBool("ClimbingUp", true);
-            animator.SetBool("GrabEdge", false);
+            //animator.SetBool("GrabEdge", false);
         }
         else
         {
