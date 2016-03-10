@@ -34,6 +34,8 @@ public partial class BoyController
     public void setHandIKOnRope()
     {
         boyCollider.SetActive(false);
+        rightFootCCD.damping = leftFootCCD.damping = 0.02f;
+
         if (zigzagHandMoveOnRope)
         {
             leftHandIK.position = nextNode ? nextNode.transform.position : ropeTransform.position;
@@ -187,7 +189,7 @@ public partial class BoyController
             state = State.IDLE;
             return;
         }
-
+       // leftHandCCD.damping = rightHandCCD.damping = 0.1f;
         leftHandIK.position = boxNearEdge;
         rightHandIK.position = boxNearEdge;
 

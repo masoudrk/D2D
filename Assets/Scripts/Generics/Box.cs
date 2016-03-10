@@ -1,9 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UnityEditor;
 
 public class Box : MonoBehaviour
 {
-    public bool canJumpUpFrom;
+    public enum Action
+    {
+        CAN_JUMP, CANNOT_JUMP , GRAB_AND_JUMP
+    }
+
+    public Action action;
+    //public bool canJumpUpFrom;
     public Transform jumpCorner;
 }

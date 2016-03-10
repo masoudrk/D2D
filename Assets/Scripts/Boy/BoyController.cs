@@ -20,7 +20,7 @@ public partial class BoyController : MonoBehaviour
     public ETCButton btn2;
     public CharacterGroundChecker characterGroundChecker;
 
-    private State state;
+    public State state;
 
     public Transform neckIK;
     public Transform rightHandIK;
@@ -55,6 +55,8 @@ public partial class BoyController : MonoBehaviour
     public float detectDetectibleCirleOffsetY = 1;
     public float detectDetectibleCirleRadius = 5;
     private Vector3 detectDetectibleCirle;
+
+    public bool debugMode;
 
     public void Start()
     {
@@ -227,18 +229,20 @@ public partial class BoyController : MonoBehaviour
         if (jumpBtn)
         {
             Box box = boxTransform.GetComponent<Box>();
-            bool canDo = box.canJumpUpFrom;
+            Box.Action act = box.action;
 
-            if (canDo)
+            if (act == Box.Action.CAN_JUMP)
             {
                 state = State.JUMP_FROM_BOX;
+                btn2.visible = false;
             }
-            else
+            else if(act == Box.Action.GRAB_AND_JUMP)
             {
                 corner = box.jumpCorner;
                 animator.SetBool("GrabEdge", true);
                 animator.SetBool("ClimbingUp", true);
                 state = State.CLIMBING_UP_FROM_EDGE;
+                btn2.visible = false;
             }
         }
     }
@@ -289,7 +293,7 @@ public partial class BoyController : MonoBehaviour
     }
     private void faceFlipingAction()
     {
-        if ((_moveX > 0 && flipFacing) || (_moveX < 0 && !flipFacing) && !lockFliping)
+        if ((_moveX > 0 && flipFacing) || (_moveX < 0 && !flipFacing) && _isGround && !lockFliping)
             flipFace();
     }
     private void jumpAction()
@@ -341,8 +345,13 @@ public partial class BoyController : MonoBehaviour
         v.y += detectDetectibleCirleOffsetY;
         Gizmos.DrawWireSphere(v, detectDetectibleCirleRadius);
     }
-    public void OnGUI()
+
+#if !UNITY_ANDROID
+ public void OnGUI()
     {
-        GUI.Box(new Rect(0, 0, 200, 20), state.ToString());
+        if(debugMode)
+            GUI.Box(new Rect(0, 0, 200, 20), state.ToString());
     }
+#endif
+
 }
